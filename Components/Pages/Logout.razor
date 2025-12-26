@@ -1,0 +1,13 @@
+@page "/logout"
+@inject NavigationManager NavigationManager
+
+<PageTitle>Déconnexion...</PageTitle>
+
+<p>Déconnexion en cours...</p>
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/Account/Logout", true);
+    }
+}

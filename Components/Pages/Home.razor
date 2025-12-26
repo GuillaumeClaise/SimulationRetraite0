@@ -1,0 +1,58 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<PageTitle>Accueil - SimulationRetraite</PageTitle>
+
+<RedirectToLogin />
+
+<h1>Bienvenue sur SimulationRetraite</h1>
+
+<div class="welcome-container">
+    <AuthorizeView>
+        <Authorized>
+            <p>Bonjour, <strong>@context.User.Identity.Name</strong> !</p>
+            <p>Vous êtes connecté avec succès à l'application de simulation de retraite.</p>
+
+            <div class="actions">
+                <a href="/logout" class="btn btn-secondary">Se déconnecter</a>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <p>Vous devez vous connecter pour accéder à cette page.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+<style>
+    .welcome-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .actions {
+        margin-top: 30px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+</style>

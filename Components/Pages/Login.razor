@@ -1,0 +1,62 @@
+@page "/Login"
+@layout LoginLayout
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
+
+<PageTitle>Connexion - SimulationRetraite</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <h2>Connexion</h2>
+        <p class="subtitle">Veuillez vous identifier pour continuer</p>
+
+        @if (errorVisible)
+        {
+            <div class="alert alert-error">
+                @error
+            </div>
+        }
+
+        @if (infoVisible)
+        {
+            <div class="alert alert-info">
+                @info
+            </div>
+        }
+
+        <form method="post" action="@($"account/login?redirectUrl={redirectUrl}")">
+            <div class="form-group">
+                <label for="userName">Nom d'utilisateur</label>
+                <input type="text" id="userName" name="userName" class="form-control" required autofocus />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" class="form-control" required />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Se connecter</button>
+        </form>
+    </div>
+</div>
+
+@code {
+    private string redirectUrl;
+    private string error;
+    private string info;
+    private bool errorVisible;
+    private bool infoVisible;
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString());
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        error = query.Get("error");
+        info = query.Get("info");
+        redirectUrl = query.Get("redirectUrl");
+
+        errorVisible = !string.IsNullOrEmpty(error);
+        infoVisible = !string.IsNullOrEmpty(info);
+    }
+}

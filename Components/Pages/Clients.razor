@@ -1,0 +1,441 @@
+@page "/clients"
+@using Microsoft.AspNetCore.Authorization
+@using SimulationRetraite0.Models
+@using SimulationRetraite0.Services
+@attribute [Authorize]
+@inject ClientService ClientService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Clients - SimulationRetraite</PageTitle>
+
+<RedirectToLogin />
+
+<div class="clients-page">
+    <div class="page-header">
+        <h1>Gestion des Clients</h1>
+        <button class="btn btn-primary" @onclick="AjouterClient">
+            <span class="icon">+</span> Ajouter un client
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">Chargement des clients...</div>
+    }
+    else if (clients == null || !clients.Any())
+    {
+        <div class="no-data">
+            <p>Aucun client trouvé.</p>
+            <button class="btn btn-primary" @onclick="AjouterClient">Ajouter le premier client</button>
+        </div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="clients-table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Email</th>
+                        <th>Nom Dossier</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var client in clients)
+                    {
+                        <tr>
+                            <td>@client.TcId</td>
+                            <td>
+                                @if (clientEnEdition?.TcId == client.TcId)
+                                {
+                                    <input type="text" class="form-input" @bind="clientEnEdition.TcNom" />
+                                }
+                                else
+                                {
+                                    @client.TcNom
+                                }
+                            </td>
+                            <td>
+                                @if (clientEnEdition?.TcId == client.TcId)
+                                {
+                                    <input type="text" class="form-input" @bind="clientEnEdition.TcPrenom" />
+                                }
+                                else
+                                {
+                                    @client.TcPrenom
+                                }
+                            </td>
+                            <td>
+                                @if (clientEnEdition?.TcId == client.TcId)
+                                {
+                                    <input type="email" class="form-input" @bind="clientEnEdition.TcEmail" />
+                                }
+                                else
+                                {
+                                    @client.TcEmail
+                                }
+                            </td>
+                            <td>
+                                @if (clientEnEdition?.TcId == client.TcId)
+                                {
+                                    <input type="text" class="form-input" @bind="clientEnEdition.TcNomDossier" />
+                                }
+                                else
+                                {
+                                    @client.TcNomDossier
+                                }
+                            </td>
+                            <td class="actions-cell">
+                                @if (clientEnEdition?.TcId == client.TcId)
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="EnregistrerModifications">Enregistrer</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="AnnulerEdition">Annuler</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-edit btn-sm" @onclick="() => ModifierClient(client)">Modifier</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => SupprimerClient(client.TcId)">Supprimer</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+
+                    @if (nouveauClient != null)
+                    {
+                        <tr class="new-row">
+                            <td><em>Nouveau</em></td>
+                            <td><input type="text" class="form-input" @bind="nouveauClient.TcNom" placeholder="Nom *" /></td>
+                            <td><input type="text" class="form-input" @bind="nouveauClient.TcPrenom" placeholder="Prénom *" /></td>
+                            <td><input type="email" class="form-input" @bind="nouveauClient.TcEmail" placeholder="Email" /></td>
+                            <td><input type="text" class="form-input" @bind="nouveauClient.TcNomDossier" placeholder="Nom dossier" /></td>
+                            <td class="actions-cell">
+                                <button class="btn btn-success btn-sm" @onclick="EnregistrerNouveauClient">Enregistrer</button>
+                                <button class="btn btn-secondary btn-sm" @onclick="AnnulerAjout">Annuler</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!string.IsNullOrEmpty(messageErreur))
+        {
+            <div class="alert alert-error">@messageErreur</div>
+        }
+
+        @if (!string.IsNullOrEmpty(messageSucces))
+        {
+            <div class="alert alert-success">@messageSucces</div>
+        }
+    }
+</div>
+
+<style>
+    .clients-page {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        color: #333;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #218838;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .btn-edit {
+        background: #ffc107;
+        color: #333;
+    }
+
+    .btn-edit:hover {
+        background: #e0a800;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+    }
+
+    .icon {
+        font-size: 18px;
+        margin-right: 5px;
+    }
+
+    .loading, .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .clients-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .clients-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .clients-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .clients-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .clients-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .clients-table tbody tr.new-row {
+        background-color: #e7f3ff;
+    }
+
+    .actions-cell {
+        white-space: nowrap;
+    }
+
+    .actions-cell button {
+        margin-right: 5px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .alert {
+        padding: 12px 15px;
+        border-radius: 6px;
+        margin-top: 20px;
+        font-size: 14px;
+    }
+
+    .alert-error {
+        background-color: #fee;
+        color: #c33;
+        border: 1px solid #fcc;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+</style>
+
+@code {
+    private List<Tclient>? clients;
+    private Tclient? clientEnEdition;
+    private Tclient? nouveauClient;
+    private bool isLoading = true;
+    private string? messageErreur;
+    private string? messageSucces;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerClients();
+    }
+
+    private async Task ChargerClients()
+    {
+        isLoading = true;
+        messageErreur = null;
+        messageSucces = null;
+
+        try
+        {
+            clients = await ClientService.GetClientsAsync();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement des clients: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void AjouterClient()
+    {
+        nouveauClient = new Tclient();
+        clientEnEdition = null;
+    }
+
+    private void ModifierClient(Tclient client)
+    {
+        clientEnEdition = new Tclient
+        {
+            TcId = client.TcId,
+            TcNom = client.TcNom,
+            TcPrenom = client.TcPrenom,
+            TcEmail = client.TcEmail,
+            TcNomDossier = client.TcNomDossier
+        };
+        nouveauClient = null;
+    }
+
+    private async Task EnregistrerNouveauClient()
+    {
+        if (nouveauClient == null) return;
+
+        messageErreur = null;
+        messageSucces = null;
+
+        if (string.IsNullOrWhiteSpace(nouveauClient.TcNom) || string.IsNullOrWhiteSpace(nouveauClient.TcPrenom))
+        {
+            messageErreur = "Le nom et le prénom sont requis.";
+            return;
+        }
+
+        try
+        {
+            await ClientService.CreateClientAsync(nouveauClient);
+            messageSucces = "Client ajouté avec succès.";
+            nouveauClient = null;
+            await ChargerClients();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de l'ajout du client: {ex.Message}";
+        }
+    }
+
+    private async Task EnregistrerModifications()
+    {
+        if (clientEnEdition == null) return;
+
+        messageErreur = null;
+        messageSucces = null;
+
+        if (string.IsNullOrWhiteSpace(clientEnEdition.TcNom) || string.IsNullOrWhiteSpace(clientEnEdition.TcPrenom))
+        {
+            messageErreur = "Le nom et le prénom sont requis.";
+            return;
+        }
+
+        try
+        {
+            await ClientService.UpdateClientAsync(clientEnEdition);
+            messageSucces = "Client modifié avec succès.";
+            clientEnEdition = null;
+            await ChargerClients();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la modification du client: {ex.Message}";
+        }
+    }
+
+    private async Task SupprimerClient(int id)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer ce client ?"))
+            return;
+
+        messageErreur = null;
+        messageSucces = null;
+
+        try
+        {
+            await ClientService.DeleteClientAsync(id);
+            messageSucces = "Client supprimé avec succès.";
+            await ChargerClients();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la suppression du client: {ex.Message}";
+        }
+    }
+
+    private void AnnulerAjout()
+    {
+        nouveauClient = null;
+        messageErreur = null;
+    }
+
+    private void AnnulerEdition()
+    {
+        clientEnEdition = null;
+        messageErreur = null;
+    }
+}

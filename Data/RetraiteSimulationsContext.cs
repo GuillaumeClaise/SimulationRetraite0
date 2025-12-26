@@ -1,0 +1,19 @@
+using Microsoft.EntityFrameworkCore;
+using SimulationRetraite0.Models;
+
+namespace SimulationRetraite0.Data;
+
+public class RetraiteSimulationsContext : DbContext
+{
+    public RetraiteSimulationsContext(DbContextOptions<RetraiteSimulationsContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Tclient> Tclients { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+    }
+}
