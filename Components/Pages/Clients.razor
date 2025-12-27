@@ -338,7 +338,11 @@
 
     private void AjouterClient()
     {
-        nouveauClient = new Tclient();
+        nouveauClient = new Tclient
+        {
+            // Créer automatiquement un nom de dossier avec la date du jour
+            TcNomDossier = DateTime.Now.ToString("dd-MM-yyyy")
+        };
         clientEnEdition = null;
     }
 
