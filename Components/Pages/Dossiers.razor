@@ -1,0 +1,459 @@
+@page "/dossiers"
+@using Microsoft.AspNetCore.Authorization
+@using SimulationRetraite0.Models
+@using SimulationRetraite0.Services
+@attribute [Authorize]
+@inject DossierService DossierService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Dossiers - SimulationRetraite</PageTitle>
+
+<RedirectToLogin />
+
+<div class="dossiers-page">
+    <div class="page-header">
+        <h1>Gestion des Dossiers</h1>
+        <button class="btn btn-primary" @onclick="AjouterDossier">
+            <span class="icon">+</span> Ajouter un dossier
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading">Chargement des dossiers...</div>
+    }
+    else if ((dossiers == null || !dossiers.Any()) && nouveauDossier == null)
+    {
+        <div class="no-data">
+            <p>Aucun dossier trouvé.</p>
+            <button class="btn btn-primary" @onclick="AjouterDossier">Ajouter le premier dossier</button>
+        </div>
+    }
+    else
+    {
+        <div class="table-container">
+            <table class="dossiers-table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Date Dossier</th>
+                        <th>Nom Dossier</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var dossier in dossiers)
+                    {
+                        <tr>
+                            <td>@dossier.TdId</td>
+                            <td>
+                                @if (dossierEnEdition?.TdId == dossier.TdId)
+                                {
+                                    <input type="text" class="form-input" @bind="dossierEnEdition.TdNomClient" />
+                                }
+                                else
+                                {
+                                    @dossier.TdNomClient
+                                }
+                            </td>
+                            <td>
+                                @if (dossierEnEdition?.TdId == dossier.TdId)
+                                {
+                                    <input type="text" class="form-input" @bind="dossierEnEdition.TdPrenomClient" />
+                                }
+                                else
+                                {
+                                    @dossier.TdPrenomClient
+                                }
+                            </td>
+                            <td>
+                                @if (dossierEnEdition?.TdId == dossier.TdId)
+                                {
+                                    <input type="date" class="form-input" @bind="dossierEnEdition.TdDateDossier" />
+                                }
+                                else
+                                {
+                                    @dossier.TdDateDossier.ToString("dd-MM-yyyy")
+                                }
+                            </td>
+                            <td>
+                                @if (dossierEnEdition?.TdId == dossier.TdId)
+                                {
+                                    <input type="text" class="form-input" @bind="dossierEnEdition.TdNomDossier" />
+                                }
+                                else
+                                {
+                                    @dossier.TdNomDossier
+                                }
+                            </td>
+                            <td>
+                                @if (dossierEnEdition?.TdId == dossier.TdId)
+                                {
+                                    <input type="text" class="form-input" @bind="dossierEnEdition.TdDescription" />
+                                }
+                                else
+                                {
+                                    @dossier.TdDescription
+                                }
+                            </td>
+                            <td class="actions-cell">
+                                @if (dossierEnEdition?.TdId == dossier.TdId)
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="EnregistrerModifications">Enregistrer</button>
+                                    <button class="btn btn-secondary btn-sm" @onclick="AnnulerEdition">Annuler</button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-edit btn-sm" @onclick="() => ModifierDossier(dossier)">Modifier</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => SupprimerDossier(dossier.TdId)">Supprimer</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+
+                    @if (nouveauDossier != null)
+                    {
+                        <tr class="new-row">
+                            <td><em>Nouveau</em></td>
+                            <td><input type="text" class="form-input" @bind="nouveauDossier.TdNomClient" placeholder="Nom *" /></td>
+                            <td><input type="text" class="form-input" @bind="nouveauDossier.TdPrenomClient" placeholder="Prénom *" /></td>
+                            <td><input type="date" class="form-input" @bind="nouveauDossier.TdDateDossier" /></td>
+                            <td><input type="text" class="form-input" @bind="nouveauDossier.TdNomDossier" placeholder="Nom dossier" /></td>
+                            <td><input type="text" class="form-input" @bind="nouveauDossier.TdDescription" placeholder="Description" /></td>
+                            <td class="actions-cell">
+                                <button class="btn btn-success btn-sm" @onclick="EnregistrerNouveauDossier">Enregistrer</button>
+                                <button class="btn btn-secondary btn-sm" @onclick="AnnulerAjout">Annuler</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!string.IsNullOrEmpty(messageErreur))
+        {
+            <div class="alert alert-error">@messageErreur</div>
+        }
+
+        @if (!string.IsNullOrEmpty(messageSucces))
+        {
+            <div class="alert alert-success">@messageSucces</div>
+        }
+    }
+</div>
+
+<style>
+    .dossiers-page {
+        padding: 20px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+        margin: 0;
+        color: #333;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #218838;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .btn-edit {
+        background: #ffc107;
+        color: #333;
+    }
+
+    .btn-edit:hover {
+        background: #e0a800;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+    }
+
+    .icon {
+        font-size: 18px;
+        margin-right: 5px;
+    }
+
+    .loading, .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .dossiers-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .dossiers-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .dossiers-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .dossiers-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .dossiers-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .dossiers-table tbody tr.new-row {
+        background-color: #e7f3ff;
+    }
+
+    .actions-cell {
+        white-space: nowrap;
+    }
+
+    .actions-cell button {
+        margin-right: 5px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .alert {
+        padding: 12px 15px;
+        border-radius: 6px;
+        margin-top: 20px;
+        font-size: 14px;
+    }
+
+    .alert-error {
+        background-color: #fee;
+        color: #c33;
+        border: 1px solid #fcc;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+</style>
+
+@code {
+    private List<Dossier>? dossiers;
+    private Dossier? dossierEnEdition;
+    private Dossier? nouveauDossier;
+    private bool isLoading = true;
+    private string? messageErreur;
+    private string? messageSucces;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerDossiers();
+    }
+
+    private async Task ChargerDossiers()
+    {
+        isLoading = true;
+        messageErreur = null;
+        messageSucces = null;
+
+        try
+        {
+            dossiers = await DossierService.GetDossiersAsync();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement des dossiers: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void AjouterDossier()
+    {
+        nouveauDossier = new Dossier
+        {
+            // Créer automatiquement un nom de dossier avec la date du jour
+            TdNomDossier = DateTime.Now.ToString("dd-MM-yyyy"),
+            TdDateDossier = DateTime.Now
+        };
+        dossierEnEdition = null;
+    }
+
+    private void ModifierDossier(Dossier dossier)
+    {
+        dossierEnEdition = new Dossier
+        {
+            TdId = dossier.TdId,
+            TdNomClient = dossier.TdNomClient,
+            TdPrenomClient = dossier.TdPrenomClient,
+            TdDateDossier = dossier.TdDateDossier,
+            TdNomDossier = dossier.TdNomDossier,
+            TdDescription = dossier.TdDescription
+        };
+        nouveauDossier = null;
+    }
+
+    private async Task EnregistrerNouveauDossier()
+    {
+        if (nouveauDossier == null) return;
+
+        messageErreur = null;
+        messageSucces = null;
+
+        if (string.IsNullOrWhiteSpace(nouveauDossier.TdNomClient) || string.IsNullOrWhiteSpace(nouveauDossier.TdPrenomClient))
+        {
+            messageErreur = "Le nom et le prénom sont requis.";
+            return;
+        }
+
+        try
+        {
+            await DossierService.CreateDossierAsync(nouveauDossier);
+            messageSucces = "Dossier ajouté avec succès.";
+            nouveauDossier = null;
+            await ChargerDossiers();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de l'ajout du dossier: {ex.Message}";
+        }
+    }
+
+    private async Task EnregistrerModifications()
+    {
+        if (dossierEnEdition == null) return;
+
+        messageErreur = null;
+        messageSucces = null;
+
+        if (string.IsNullOrWhiteSpace(dossierEnEdition.TdNomClient) || string.IsNullOrWhiteSpace(dossierEnEdition.TdPrenomClient))
+        {
+            messageErreur = "Le nom et le prénom sont requis.";
+            return;
+        }
+
+        try
+        {
+            await DossierService.UpdateDossierAsync(dossierEnEdition);
+            messageSucces = "Dossier modifié avec succès.";
+            dossierEnEdition = null;
+            await ChargerDossiers();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la modification du dossier: {ex.Message}";
+        }
+    }
+
+    private async Task SupprimerDossier(int id)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer ce dossier ?"))
+            return;
+
+        messageErreur = null;
+        messageSucces = null;
+
+        try
+        {
+            await DossierService.DeleteDossierAsync(id);
+            messageSucces = "Dossier supprimé avec succès.";
+            await ChargerDossiers();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la suppression du dossier: {ex.Message}";
+        }
+    }
+
+    private void AnnulerAjout()
+    {
+        nouveauDossier = null;
+        messageErreur = null;
+    }
+
+    private void AnnulerEdition()
+    {
+        dossierEnEdition = null;
+        messageErreur = null;
+    }
+}
