@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimulationRetraite0.Data;
 
@@ -11,9 +12,11 @@ using SimulationRetraite0.Data;
 namespace SimulationRetraite0.Migrations.RetraiteSimulations
 {
     [DbContext(typeof(RetraiteSimulationsContext))]
-    partial class RetraiteSimulationsContextModelSnapshot : ModelSnapshot
+    [Migration("20251227222325_AddTableauxAndLignesTableau")]
+    partial class AddTableauxAndLignesTableau
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

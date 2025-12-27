@@ -12,6 +12,8 @@ public class RetraiteSimulationsContext : DbContext
 
     public DbSet<Tclient> Tclients { get; set; }
     public DbSet<Dossier> Dossiers { get; set; }
+    public DbSet<Tableau> Tableaux { get; set; }
+    public DbSet<LigneTableau> LignesTableau { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
