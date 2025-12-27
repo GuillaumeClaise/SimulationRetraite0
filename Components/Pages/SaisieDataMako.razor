@@ -1,0 +1,156 @@
+@page "/saisie-data-mako"
+@using System.Text.Json
+@using SimulationRetraite0.Models
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Saisie Data Mako</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Saisie Data Mako</h2>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            <button class="btn btn-primary btn-lg" @onclick="RecupererDonnees">
+                <i class="bi bi-clipboard-check"></i> Récupération des données
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(messageErreur))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Erreur !</strong> @messageErreur
+                    <button type="button" class="btn-close" @onclick="@(() => messageErreur = string.Empty)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(messageSucces))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Succès !</strong> @messageSucces
+                    <button type="button" class="btn-close" @onclick="@(() => messageSucces = string.Empty)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (tableaux != null && tableaux.Any())
+    {
+        @foreach (var tableau in tableaux)
+        {
+            <div class="row mb-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Tableau @tableau.Index</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            @foreach (var header in tableau.Headers)
+                                            {
+                                                <th>@header</th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in tableau.Rows)
+                                        {
+                                            <tr>
+                                                @for (int i = 0; i < row.Count; i++)
+                                                {
+                                                    @if (i == 0)
+                                                    {
+                                                        <td class="fw-bold">@row[i]</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td class="text-end">@row[i]</td>
+                                                    }
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Aucune donnée chargée. Cliquez sur "Récupération des données" pour charger le tableau depuis le presse-papiers.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TableauMako>? tableaux;
+    private string messageErreur = string.Empty;
+    private string messageSucces = string.Empty;
+
+    private async Task RecupererDonnees()
+    {
+        try
+        {
+            messageErreur = string.Empty;
+            messageSucces = string.Empty;
+
+            // Lire le contenu du clipboard via JavaScript
+            var clipboardContent = await JS.InvokeAsync<string>("clipboardInterop.readText");
+
+            if (string.IsNullOrWhiteSpace(clipboardContent))
+            {
+                messageErreur = "Le presse-papiers est vide.";
+                return;
+            }
+
+            // Parser le JSON
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            tableaux = JsonSerializer.Deserialize<List<TableauMako>>(clipboardContent, options);
+
+            if (tableaux == null || !tableaux.Any())
+            {
+                messageErreur = "Impossible de parser les données JSON. Vérifiez le format.";
+                tableaux = null;
+                return;
+            }
+
+            messageSucces = $"{tableaux.Count} tableau(x) chargé(s) avec succès !";
+        }
+        catch (JsonException ex)
+        {
+            messageErreur = $"Erreur de format JSON : {ex.Message}";
+            tableaux = null;
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la récupération : {ex.Message}";
+            tableaux = null;
+        }
+    }
+}
