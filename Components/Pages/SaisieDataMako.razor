@@ -57,7 +57,14 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-striped table-hover">
+                                <table class="table table-bordered table-striped table-hover" style="table-layout: fixed; width: 100%;">
+                                    <colgroup>
+                                        <col style="width: 15%;">
+                                        @for (int i = 1; i < tableau.Headers.Count; i++)
+                                        {
+                                            <col style="width: @((85.0 / (tableau.Headers.Count - 1)).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%;">
+                                        }
+                                    </colgroup>
                                     <thead class="table-dark">
                                         <tr>
                                             @foreach (var header in tableau.Headers)
@@ -74,7 +81,7 @@
                                                 {
                                                     @if (i == 0)
                                                     {
-                                                        <td class="fw-bold">@row[i]</td>
+                                                        <td class="fw-bold text-truncate" title="@row[i]">@row[i]</td>
                                                     }
                                                     else
                                                     {
@@ -83,6 +90,52 @@
                                                 }
                                             </tr>
                                         }
+                                        <tr class="table-light">
+                                            <td class="fw-bold text-truncate" title="Sélection">Sélection</td>
+                                            @for (int colIndex = 1; colIndex < tableau.Headers.Count; colIndex++)
+                                            {
+                                                var currentIndex = colIndex;
+                                                var isSelected = IsColumnSelected(tableau.Index, currentIndex);
+                                                <td class="text-center">
+                                                    @if (isSelected)
+                                                    {
+                                                        <button class="btn btn-sm btn-success" @onclick="() => OnColumnButtonClick(tableau.Index, currentIndex)">
+                                                            <i class="bi bi-check-circle-fill"></i> Sélectionné
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-secondary" @onclick="() => OnColumnButtonClick(tableau.Index, currentIndex)">
+                                                            <i class="bi bi-circle"></i> Sélectionner
+                                                        </button>
+                                                    }
+                                                </td>
+                                            }
+                                        </tr>
+                                        <tr class="table-light">
+                                            <td class="fw-bold">Action</td>
+                                            @{
+                                                var hasSelection = HasSelectedColumns(tableau.Index);
+                                            }
+                                            <td class="text-center">
+                                                <button class="btn btn-sm @(hasSelection ? "btn-primary" : "btn-secondary")"
+                                                        @onclick="() => OnIntegrationClick(tableau.Index)"
+                                                        disabled="@(!hasSelection)">
+                                                    <i class="bi bi-download"></i> Intégration infos
+                                                </button>
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm @(hasSelection ? "btn-warning" : "btn-secondary")"
+                                                        @onclick="() => OnDeselectionnerClick(tableau.Index)"
+                                                        disabled="@(!hasSelection)">
+                                                    <i class="bi bi-x-circle"></i> Déselectionner
+                                                </button>
+                                            </td>
+                                            @for (int colIndex = 3; colIndex < tableau.Headers.Count; colIndex++)
+                                            {
+                                                <td></td>
+                                            }
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -108,6 +161,72 @@
     private List<TableauMako>? tableaux;
     private string messageErreur = string.Empty;
     private string messageSucces = string.Empty;
+
+    // Dictionnaire pour stocker les colonnes sélectionnées par tableau
+    // Clé: tableauIndex, Valeur: HashSet des index de colonnes sélectionnées
+    private Dictionary<int, HashSet<int>> selectedColumns = new();
+
+    private void OnColumnButtonClick(int tableauIndex, int columnIndex)
+    {
+        // Initialiser le HashSet si nécessaire
+        if (!selectedColumns.ContainsKey(tableauIndex))
+        {
+            selectedColumns[tableauIndex] = new HashSet<int>();
+        }
+
+        var tableau = tableaux?.FirstOrDefault(t => t.Index == tableauIndex);
+        if (tableau != null && columnIndex < tableau.Headers.Count)
+        {
+            var columnHeader = tableau.Headers[columnIndex];
+
+            // Toggle la sélection
+            if (selectedColumns[tableauIndex].Contains(columnIndex))
+            {
+                // Déselectionner
+                selectedColumns[tableauIndex].Remove(columnIndex);
+                messageSucces = $"Colonne désélectionnée : '{columnHeader}'";
+            }
+            else
+            {
+                // Sélectionner
+                selectedColumns[tableauIndex].Add(columnIndex);
+                messageSucces = $"Colonne sélectionnée : '{columnHeader}'";
+            }
+        }
+    }
+
+    private bool IsColumnSelected(int tableauIndex, int columnIndex)
+    {
+        return selectedColumns.ContainsKey(tableauIndex) &&
+               selectedColumns[tableauIndex].Contains(columnIndex);
+    }
+
+    private bool HasSelectedColumns(int tableauIndex)
+    {
+        return selectedColumns.ContainsKey(tableauIndex) &&
+               selectedColumns[tableauIndex].Count > 0;
+    }
+
+    private void OnIntegrationClick(int tableauIndex)
+    {
+        if (!HasSelectedColumns(tableauIndex))
+            return;
+
+        var selectedCount = selectedColumns[tableauIndex].Count;
+        messageSucces = $"Intégration des infos pour {selectedCount} colonne(s) sélectionnée(s)";
+
+        // TODO: Implémenter la logique d'intégration
+    }
+
+    private void OnDeselectionnerClick(int tableauIndex)
+    {
+        if (!HasSelectedColumns(tableauIndex))
+            return;
+
+        var selectedCount = selectedColumns[tableauIndex].Count;
+        selectedColumns[tableauIndex].Clear();
+        messageSucces = $"{selectedCount} colonne(s) désélectionnée(s)";
+    }
 
     private async Task RecupererDonnees()
     {
@@ -138,6 +257,18 @@
                 messageErreur = "Impossible de parser les données JSON. Vérifiez le format.";
                 tableaux = null;
                 return;
+            }
+
+            // Initialiser toutes les colonnes comme sélectionnées par défaut
+            selectedColumns.Clear();
+            foreach (var tableau in tableaux)
+            {
+                selectedColumns[tableau.Index] = new HashSet<int>();
+                // Sélectionner toutes les colonnes (sauf la première qui est le libellé)
+                for (int i = 1; i < tableau.Headers.Count; i++)
+                {
+                    selectedColumns[tableau.Index].Add(i);
+                }
             }
 
             messageSucces = $"{tableaux.Count} tableau(x) chargé(s) avec succès !";
