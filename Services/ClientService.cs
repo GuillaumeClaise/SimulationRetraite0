@@ -35,6 +35,13 @@ public class ClientService
 
     public async Task<Tclient> UpdateClientAsync(Tclient client)
     {
+        // Détacher l'entité existante si elle est déjà trackée
+        var existingEntity = context.Tclients.Local.FirstOrDefault(c => c.TcId == client.TcId);
+        if (existingEntity != null)
+        {
+            context.Entry(existingEntity).State = EntityState.Detached;
+        }
+
         context.Entry(client).State = EntityState.Modified;
         await context.SaveChangesAsync();
         return client;
