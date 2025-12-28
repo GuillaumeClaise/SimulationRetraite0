@@ -76,4 +76,43 @@ public class TableauService
 
         return (maxNumero ?? 0) + 1;
     }
+
+    // Méthodes pour la gestion des lignes de tableau
+    public async Task UpdateLigneTableauAsync(LigneTableau ligne)
+    {
+        var existingLigne = await context.LignesTableau.FindAsync(ligne.LtId);
+        if (existingLigne != null)
+        {
+            existingLigne.LtNumeroLigne = ligne.LtNumeroLigne;
+            existingLigne.LtLibelle = ligne.LtLibelle;
+            existingLigne.LtValeur1 = ligne.LtValeur1;
+            existingLigne.LtValeur2 = ligne.LtValeur2;
+            existingLigne.LtValeur3 = ligne.LtValeur3;
+            existingLigne.LtValeur4 = ligne.LtValeur4;
+            existingLigne.LtValeur5 = ligne.LtValeur5;
+            existingLigne.LtValeur6 = ligne.LtValeur6;
+            existingLigne.LtValeur7 = ligne.LtValeur7;
+            existingLigne.LtValeur8 = ligne.LtValeur8;
+            existingLigne.LtValeur9 = ligne.LtValeur9;
+            existingLigne.LtValeur10 = ligne.LtValeur10;
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<LigneTableau> CreateLigneTableauAsync(LigneTableau ligne)
+    {
+        context.LignesTableau.Add(ligne);
+        await context.SaveChangesAsync();
+        return ligne;
+    }
+
+    public async Task DeleteLigneTableauAsync(int ligneId)
+    {
+        var ligne = await context.LignesTableau.FindAsync(ligneId);
+        if (ligne != null)
+        {
+            context.LignesTableau.Remove(ligne);
+            await context.SaveChangesAsync();
+        }
+    }
 }

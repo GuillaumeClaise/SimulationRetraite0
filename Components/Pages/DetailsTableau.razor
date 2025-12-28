@@ -8,12 +8,6 @@
 <PageTitle>Détails Tableau</PageTitle>
 
 <div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col">
-            <h2>Détails Tableau</h2>
-        </div>
-    </div>
-
     <!-- Sélection du dossier -->
     <div class="row mb-3">
         <div class="col-md-6">
@@ -79,49 +73,138 @@
         }
     </div>
 
-    <!-- Informations du tableau sélectionné -->
+    <!-- Boutons d'action -->
     @if (tableauSelectionne != null)
     {
         <div class="row mb-3">
             <div class="col">
                 <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Informations du tableau</h5>
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Actions</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <strong>Numéro :</strong> @tableauSelectionne.TabNumeroTableau
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Nom :</strong> @tableauSelectionne.TabNomTableau
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Date création :</strong> @tableauSelectionne.TabDateCreation.ToString("dd/MM/yyyy HH:mm")
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Nombre de lignes :</strong> @(lignesDonnees?.Count ?? 0)
-                            </div>
+                        <button class="btn btn-primary me-2" @onclick="ActiverModeEdition" disabled="@modeEdition">
+                            <i class="bi bi-pencil"></i> Activer la modification
+                        </button>
+                        <button class="btn btn-success me-2" @onclick="EnregistrerModifications" disabled="@(!modeEdition)">
+                            <i class="bi bi-save"></i> Enregistrer
+                        </button>
+                        <button class="btn btn-secondary" @onclick="AnnulerModifications" disabled="@(!modeEdition)">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        @if (!string.IsNullOrEmpty(messageErreur))
+        {
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Erreur !</strong> @messageErreur
+                        <button type="button" class="btn-close" @onclick="@(() => messageErreur = string.Empty)"></button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(messageSucces))
+        {
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Succès !</strong> @messageSucces
+                        <button type="button" class="btn-close" @onclick="@(() => messageSucces = string.Empty)"></button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- En-têtes éditables -->
+        @if (ligneEntete != null && modeEdition)
+        {
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header bg-warning d-flex justify-content-between align-items-center" style="cursor: pointer;" @onclick="ToggleEntetesVisibility">
+                            <h6 class="mb-0">Modification des en-têtes</h6>
+                            <span class="badge bg-dark">
+                                @if (entetesVisible)
+                                {
+                                    <text>▲</text>
+                                }
+                                else
+                                {
+                                    <text>▼</text>
+                                }
+                            </span>
                         </div>
-                        @if (!string.IsNullOrEmpty(tableauSelectionne.TabDescription))
+                        @if (entetesVisible)
                         {
-                            <div class="row mt-2">
-                                <div class="col">
-                                    <strong>Description :</strong> @tableauSelectionne.TabDescription
+                            <div class="card-body">
+                                <div class="row g-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 1</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur1" placeholder="Nom colonne 1" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 2</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur2" placeholder="Nom colonne 2" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 3</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur3" placeholder="Nom colonne 3" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 4</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur4" placeholder="Nom colonne 4" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 5</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur5" placeholder="Nom colonne 5" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 6</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur6" placeholder="Nom colonne 6" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 7</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur7" placeholder="Nom colonne 7" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 8</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur8" placeholder="Nom colonne 8" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 9</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur9" placeholder="Nom colonne 9" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Colonne 10</label>
+                                        <input type="text" class="form-control" @bind="ligneEntete.LtValeur10" placeholder="Nom colonne 10" />
+                                    </div>
                                 </div>
                             </div>
                         }
                     </div>
                 </div>
             </div>
-        </div>
+        }
 
         <!-- Affichage du tableau de données -->
         <div class="row">
             <div class="col">
                 <div class="card">
-                    <div class="card-header bg-dark text-white">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Données du tableau</h5>
+                        @if (modeEdition)
+                        {
+                            <button class="btn btn-sm btn-success" @onclick="AjouterNouvelleLigne">
+                                <i class="bi bi-plus-circle"></i> Ajouter une ligne
+                            </button>
+                        }
                     </div>
                     <div class="card-body p-0">
                         @if (lignesDonnees == null || !lignesDonnees.Any())
@@ -151,6 +234,10 @@
                                                 @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9)) { <th>@ligneEntete.LtValeur9</th> }
                                                 @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10)) { <th>@ligneEntete.LtValeur10</th> }
                                             }
+                                            @if (modeEdition)
+                                            {
+                                                <th style="width: 100px;">Actions</th>
+                                            }
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -158,19 +245,156 @@
                                         {
                                             <tr>
                                                 <td class="text-center">@ligne.LtNumeroLigne</td>
-                                                <td>@ligne.LtLibelle</td>
+                                                <td>
+                                                    @if (modeEdition)
+                                                    {
+                                                        <input type="text" class="form-control form-control-sm" @bind="ligne.LtLibelle" />
+                                                    }
+                                                    else
+                                                    {
+                                                        @ligne.LtLibelle
+                                                    }
+                                                </td>
                                                 @if (ligneEntete != null)
                                                 {
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur1)) { <td class="text-end">@ligne.LtValeur1</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur2)) { <td class="text-end">@ligne.LtValeur2</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur3)) { <td class="text-end">@ligne.LtValeur3</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur4)) { <td class="text-end">@ligne.LtValeur4</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur5)) { <td class="text-end">@ligne.LtValeur5</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur6)) { <td class="text-end">@ligne.LtValeur6</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur7)) { <td class="text-end">@ligne.LtValeur7</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur8)) { <td class="text-end">@ligne.LtValeur8</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9)) { <td class="text-end">@ligne.LtValeur9</td> }
-                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10)) { <td class="text-end">@ligne.LtValeur10</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur1))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur1" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur1</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur2))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur2" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur2</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur3))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur3" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur3</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur4))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur4" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur4</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur5))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur5" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur5</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur6))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur6" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur6</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur7))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur7" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur7</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur8))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur8" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur8</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur9" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur9</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10))
+                                                    {
+                                                        <td>
+                                                            @if (modeEdition)
+                                                            {
+                                                                <input type="text" class="form-control form-control-sm" @bind="ligne.LtValeur10" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-end d-block">@ligne.LtValeur10</span>
+                                                            }
+                                                        </td>
+                                                    }
+                                                }
+                                                @if (modeEdition)
+                                                {
+                                                    <td class="text-center">
+                                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmerSuppression(ligne)" title="Supprimer">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
                                                 }
                                             </tr>
                                         }
@@ -182,6 +406,37 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal de confirmation de suppression -->
+        @if (ligneASupprimer != null)
+        {
+            <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">Confirmer la suppression</h5>
+                            <button type="button" class="btn-close btn-close-white" @onclick="AnnulerSuppression"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Êtes-vous sûr de vouloir supprimer cette ligne ?</p>
+                            <ul>
+                                <li><strong>Ligne :</strong> @ligneASupprimer.LtNumeroLigne</li>
+                                <li><strong>Libellé :</strong> @ligneASupprimer.LtLibelle</li>
+                            </ul>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="AnnulerSuppression">Annuler</button>
+                            <button type="button" class="btn btn-danger" @onclick="SupprimerLigne">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     }
     else if (dossierSelectionne != null)
     {
@@ -212,6 +467,17 @@
     private Tableau? tableauSelectionne;
     private LigneTableau? ligneEntete;
     private List<LigneTableau>? lignesDonnees;
+
+    // Variables pour le mode édition
+    private bool modeEdition = false;
+    private bool entetesVisible = false;
+    private string messageErreur = string.Empty;
+    private string messageSucces = string.Empty;
+    private LigneTableau? ligneASupprimer;
+
+    // Backup pour l'annulation
+    private LigneTableau? ligneEnteteBackup;
+    private List<LigneTableau>? lignesDonneesBackup;
 
     protected override async Task OnInitializedAsync()
     {
@@ -297,5 +563,198 @@
         {
             Console.WriteLine($"Erreur lors du chargement du tableau: {ex.Message}");
         }
+    }
+
+    // Méthodes pour le mode édition
+    private void ActiverModeEdition()
+    {
+        modeEdition = true;
+        messageErreur = string.Empty;
+        messageSucces = string.Empty;
+
+        // Sauvegarder l'état actuel pour pouvoir annuler
+        if (ligneEntete != null)
+        {
+            ligneEnteteBackup = new LigneTableau
+            {
+                LtId = ligneEntete.LtId,
+                LtTabId = ligneEntete.LtTabId,
+                LtNumeroLigne = ligneEntete.LtNumeroLigne,
+                LtLibelle = ligneEntete.LtLibelle,
+                LtValeur1 = ligneEntete.LtValeur1,
+                LtValeur2 = ligneEntete.LtValeur2,
+                LtValeur3 = ligneEntete.LtValeur3,
+                LtValeur4 = ligneEntete.LtValeur4,
+                LtValeur5 = ligneEntete.LtValeur5,
+                LtValeur6 = ligneEntete.LtValeur6,
+                LtValeur7 = ligneEntete.LtValeur7,
+                LtValeur8 = ligneEntete.LtValeur8,
+                LtValeur9 = ligneEntete.LtValeur9,
+                LtValeur10 = ligneEntete.LtValeur10
+            };
+        }
+
+        if (lignesDonnees != null)
+        {
+            lignesDonneesBackup = lignesDonnees.Select(l => new LigneTableau
+            {
+                LtId = l.LtId,
+                LtTabId = l.LtTabId,
+                LtNumeroLigne = l.LtNumeroLigne,
+                LtLibelle = l.LtLibelle,
+                LtValeur1 = l.LtValeur1,
+                LtValeur2 = l.LtValeur2,
+                LtValeur3 = l.LtValeur3,
+                LtValeur4 = l.LtValeur4,
+                LtValeur5 = l.LtValeur5,
+                LtValeur6 = l.LtValeur6,
+                LtValeur7 = l.LtValeur7,
+                LtValeur8 = l.LtValeur8,
+                LtValeur9 = l.LtValeur9,
+                LtValeur10 = l.LtValeur10
+            }).ToList();
+        }
+    }
+
+    private async Task EnregistrerModifications()
+    {
+        try
+        {
+            messageErreur = string.Empty;
+            messageSucces = string.Empty;
+
+            if (tableauSelectionne == null)
+                return;
+
+            // Enregistrer l'en-tête
+            if (ligneEntete != null)
+            {
+                await TableauService.UpdateLigneTableauAsync(ligneEntete);
+            }
+
+            // Enregistrer les lignes de données
+            if (lignesDonnees != null)
+            {
+                foreach (var ligne in lignesDonnees)
+                {
+                    if (ligne.LtId > 0)
+                    {
+                        await TableauService.UpdateLigneTableauAsync(ligne);
+                    }
+                    else
+                    {
+                        // Nouvelle ligne à créer
+                        await TableauService.CreateLigneTableauAsync(ligne);
+                    }
+                }
+            }
+
+            messageSucces = "Modifications enregistrées avec succès.";
+            modeEdition = false;
+
+            // Recharger les données
+            await ChargerTableau(tableauSelectionne.TabId);
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de l'enregistrement : {ex.Message}";
+        }
+    }
+
+    private async Task AnnulerModifications()
+    {
+        messageErreur = string.Empty;
+        messageSucces = string.Empty;
+        modeEdition = false;
+
+        // Restaurer depuis le backup
+        if (tableauSelectionne != null)
+        {
+            await ChargerTableau(tableauSelectionne.TabId);
+        }
+    }
+
+    private void AjouterNouvelleLigne()
+    {
+        if (lignesDonnees == null || tableauSelectionne == null)
+            return;
+
+        var nouveauNumero = lignesDonnees.Any()
+            ? lignesDonnees.Max(l => l.LtNumeroLigne) + 1
+            : 1;
+
+        var nouvelleLigne = new LigneTableau
+        {
+            LtTabId = tableauSelectionne.TabId,
+            LtNumeroLigne = nouveauNumero,
+            LtLibelle = string.Empty,
+            LtValeur1 = string.Empty,
+            LtValeur2 = string.Empty,
+            LtValeur3 = string.Empty,
+            LtValeur4 = string.Empty,
+            LtValeur5 = string.Empty,
+            LtValeur6 = string.Empty,
+            LtValeur7 = string.Empty,
+            LtValeur8 = string.Empty,
+            LtValeur9 = string.Empty,
+            LtValeur10 = string.Empty
+        };
+
+        lignesDonnees.Add(nouvelleLigne);
+    }
+
+    private void ConfirmerSuppression(LigneTableau ligne)
+    {
+        ligneASupprimer = ligne;
+    }
+
+    private void AnnulerSuppression()
+    {
+        ligneASupprimer = null;
+    }
+
+    private async Task SupprimerLigne()
+    {
+        if (ligneASupprimer == null || lignesDonnees == null)
+            return;
+
+        try
+        {
+            messageErreur = string.Empty;
+            messageSucces = string.Empty;
+
+            // Si la ligne existe en base de données, la supprimer
+            if (ligneASupprimer.LtId > 0)
+            {
+                await TableauService.DeleteLigneTableauAsync(ligneASupprimer.LtId);
+            }
+
+            // Retirer de la liste locale
+            lignesDonnees.Remove(ligneASupprimer);
+
+            // Renuméroter les lignes restantes
+            var numeroLigne = 1;
+            foreach (var ligne in lignesDonnees.OrderBy(l => l.LtNumeroLigne))
+            {
+                ligne.LtNumeroLigne = numeroLigne++;
+                if (ligne.LtId > 0)
+                {
+                    await TableauService.UpdateLigneTableauAsync(ligne);
+                }
+            }
+
+            messageSucces = "Ligne supprimée avec succès.";
+            ligneASupprimer = null;
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la suppression : {ex.Message}";
+            ligneASupprimer = null;
+        }
+    }
+
+    private void ToggleEntetesVisibility()
+    {
+        entetesVisible = !entetesVisible;
     }
 }
