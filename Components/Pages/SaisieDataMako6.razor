@@ -1,0 +1,422 @@
+@page "/saisie-data-mako6"
+@using System.Text.Json
+@using SimulationRetraite0.Models
+@using SimulationRetraite0.Services
+@inject IJSRuntime JS
+@inject DossierService DossierService
+@inject TableauService TableauService
+@rendermode InteractiveServer
+
+<PageTitle>Saisie Data Mako 6</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Saisie Data Mako 6</h2>
+        </div>
+    </div>
+
+    <!-- Sélection du dossier -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">1. Sélectionner un dossier</h5>
+                </div>
+                <div class="card-body">
+                    @if (dossiers == null || !dossiers.Any())
+                    {
+                        <p class="text-muted">Aucun dossier disponible. Veuillez créer un dossier depuis la page Dossiers.</p>
+                    }
+                    else
+                    {
+                        <select class="form-select" @onchange="OnDossierSelected">
+                            <option value="">-- Sélectionner un dossier --</option>
+                            @foreach (var dossier in dossiers)
+                            {
+                                <option value="@dossier.TdId">@dossier.TdNomClient @dossier.TdPrenomClient - @dossier.TdNomDossier</option>
+                            }
+                        </select>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Création du tableau -->
+        @if (dossierSelectionne != null)
+        {
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">2. Créer un nouveau tableau</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!modeCreationTableau)
+                        {
+                            <button class="btn btn-success" @onclick="CreerNouveauTableau">
+                                <i class="bi bi-plus-circle"></i> Créer un nouveau tableau
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Nom du tableau *</label>
+                                <input type="text" class="form-control" @bind="nouveauTableauNom" placeholder="Entrez le nom du tableau" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" rows="3" @bind="nouveauTableauDescription" placeholder="Description du tableau (optionnel)"></textarea>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" @onclick="AnnulerCreationTableau">
+                                <i class="bi bi-x-circle"></i> Annuler
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Bouton de récupération des données -->
+    @if (modeCreationTableau && !string.IsNullOrWhiteSpace(nouveauTableauNom))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <button class="btn btn-primary btn-lg" @onclick="RecupererDonnees">
+                    <i class="bi bi-clipboard-check"></i> Récupération des données
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(messageErreur))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Erreur !</strong> @messageErreur
+                    <button type="button" class="btn-close" @onclick="@(() => messageErreur = string.Empty)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(messageSucces))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Succès !</strong> @messageSucces
+                    <button type="button" class="btn-close" @onclick="@(() => messageSucces = string.Empty)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (tableaux != null && tableaux.Any())
+    {
+        @foreach (var tableau in tableaux)
+        {
+            <div class="row mb-4">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Tableau @tableau.Index</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-hover" style="table-layout: fixed; width: 100%;">
+                                    <colgroup>
+                                        <col style="width: 15%;">
+                                        @for (int i = 1; i < tableau.Headers.Count; i++)
+                                        {
+                                            <col style="width: @((85.0 / (tableau.Headers.Count - 1)).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))%;">
+                                        }
+                                    </colgroup>
+                                    <thead class="table-dark">
+                                        <tr>
+                                            @foreach (var header in tableau.Headers)
+                                            {
+                                                <th>@header</th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in tableau.Rows)
+                                        {
+                                            <tr>
+                                                @for (int i = 0; i < row.Count; i++)
+                                                {
+                                                    @if (i == 0)
+                                                    {
+                                                        <td class="fw-bold text-truncate" title="@row[i]">@row[i]</td>
+                                                    }
+                                                    else
+                                                    {
+                                                        <td class="text-end">@row[i]</td>
+                                                    }
+                                                }
+                                            </tr>
+                                        }
+                                        <tr class="table-light">
+                                            <td class="fw-bold">Action</td>
+                                            @{
+                                                var hasSelection = HasSelectedColumns(tableau.Index);
+                                            }
+                                            <td class="text-center">
+                                                <button class="btn btn-sm @(hasSelection ? "btn-primary" : "btn-secondary")"
+                                                        @onclick="() => OnIntegrationClick(tableau.Index)"
+                                                        disabled="@(!hasSelection)">
+                                                    <i class="bi bi-download"></i> Intégration infos
+                                                </button>
+                                            </td>
+                                            @for (int colIndex = 2; colIndex < tableau.Headers.Count; colIndex++)
+                                            {
+                                                <td></td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Aucune donnée chargée. Cliquez sur "Récupération des données" pour charger le tableau depuis le presse-papiers.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TableauMako>? tableaux;
+    private string messageErreur = string.Empty;
+    private string messageSucces = string.Empty;
+
+    // Gestion des dossiers et tableaux
+    private List<Dossier>? dossiers;
+    private Dossier? dossierSelectionne;
+    private bool modeCreationTableau = false;
+    private string nouveauTableauNom = string.Empty;
+    private string nouveauTableauDescription = string.Empty;
+
+    // Dictionnaire pour stocker les colonnes sélectionnées par tableau
+    // Clé: tableauIndex, Valeur: HashSet des index de colonnes sélectionnées
+    private Dictionary<int, HashSet<int>> selectedColumns = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerDossiers();
+    }
+
+    private async Task ChargerDossiers()
+    {
+        try
+        {
+            dossiers = await DossierService.GetDossiersAsync();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement des dossiers: {ex.Message}";
+        }
+    }
+
+    private void OnDossierSelected(ChangeEventArgs e)
+    {
+        messageErreur = string.Empty;
+        messageSucces = string.Empty;
+        modeCreationTableau = false;
+        nouveauTableauNom = string.Empty;
+        nouveauTableauDescription = string.Empty;
+
+        if (int.TryParse(e.Value?.ToString(), out int dossierId))
+        {
+            dossierSelectionne = dossiers?.FirstOrDefault(d => d.TdId == dossierId);
+        }
+        else
+        {
+            dossierSelectionne = null;
+        }
+    }
+
+    private void CreerNouveauTableau()
+    {
+        messageErreur = string.Empty;
+        messageSucces = string.Empty;
+        modeCreationTableau = true;
+        nouveauTableauNom = string.Empty;
+        nouveauTableauDescription = string.Empty;
+        tableaux = null;
+        selectedColumns.Clear();
+    }
+
+    private void AnnulerCreationTableau()
+    {
+        modeCreationTableau = false;
+        nouveauTableauNom = string.Empty;
+        nouveauTableauDescription = string.Empty;
+        tableaux = null;
+        selectedColumns.Clear();
+        messageErreur = string.Empty;
+        messageSucces = string.Empty;
+    }
+
+    private bool HasSelectedColumns(int tableauIndex)
+    {
+        return selectedColumns.ContainsKey(tableauIndex) &&
+               selectedColumns[tableauIndex].Count > 0;
+    }
+
+    private async Task OnIntegrationClick(int tableauIndex)
+    {
+        if (!HasSelectedColumns(tableauIndex))
+            return;
+
+        if (dossierSelectionne == null)
+        {
+            messageErreur = "Veuillez sélectionner un dossier.";
+            return;
+        }
+
+        try
+        {
+            messageErreur = string.Empty;
+            var tableauMako = tableaux?.FirstOrDefault(t => t.Index == tableauIndex);
+            if (tableauMako == null)
+            {
+                messageErreur = "Tableau non trouvé.";
+                return;
+            }
+
+            // Créer un nouveau tableau
+            var numeroTableau = await TableauService.GetNextNumeroTableauAsync(dossierSelectionne.TdId);
+            var nouveauTableau = new Tableau
+            {
+                TabTdId = dossierSelectionne.TdId,
+                TabNumeroTableau = numeroTableau,
+                TabNomTableau = nouveauTableauNom,
+                TabDescription = nouveauTableauDescription,
+                TabDateCreation = DateTime.Now
+            };
+
+            // Créer les lignes du tableau à partir des données sélectionnées
+            var lignes = new List<LigneTableau>();
+            int numeroLigne = 1;
+
+            foreach (var row in tableauMako.Rows)
+            {
+                var ligne = new LigneTableau
+                {
+                    LtNumeroLigne = numeroLigne++,
+                    LtLibelle = row.Count > 0 ? row[0] : string.Empty
+                };
+
+                // Ajouter les valeurs des colonnes sélectionnées
+                var colonnesSelectionnees = selectedColumns[tableauIndex].OrderBy(c => c).ToList();
+                for (int i = 0; i < colonnesSelectionnees.Count && i < 10; i++)
+                {
+                    var colIndex = colonnesSelectionnees[i];
+                    if (colIndex < row.Count)
+                    {
+                        var valeur = row[colIndex];
+                        switch (i)
+                        {
+                            case 0: ligne.LtValeur1 = valeur; break;
+                            case 1: ligne.LtValeur2 = valeur; break;
+                            case 2: ligne.LtValeur3 = valeur; break;
+                            case 3: ligne.LtValeur4 = valeur; break;
+                            case 4: ligne.LtValeur5 = valeur; break;
+                            case 5: ligne.LtValeur6 = valeur; break;
+                            case 6: ligne.LtValeur7 = valeur; break;
+                            case 7: ligne.LtValeur8 = valeur; break;
+                            case 8: ligne.LtValeur9 = valeur; break;
+                            case 9: ligne.LtValeur10 = valeur; break;
+                        }
+                    }
+                }
+
+                lignes.Add(ligne);
+            }
+
+            // Sauvegarder en base
+            await TableauService.CreateTableauWithLignesAsync(nouveauTableau, lignes);
+            messageSucces = $"Tableau '{nouveauTableauNom}' créé avec succès! {lignes.Count} ligne(s) intégrée(s).";
+
+            // Réinitialiser pour permettre une nouvelle création
+            modeCreationTableau = false;
+            nouveauTableauNom = string.Empty;
+            nouveauTableauDescription = string.Empty;
+            tableaux = null;
+            selectedColumns.Clear();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de l'intégration: {ex.Message}";
+        }
+    }
+
+    private async Task RecupererDonnees()
+    {
+        try
+        {
+            messageErreur = string.Empty;
+            messageSucces = string.Empty;
+
+            // Lire le contenu du clipboard via JavaScript
+            var clipboardContent = await JS.InvokeAsync<string>("clipboardInterop.readText");
+
+            if (string.IsNullOrWhiteSpace(clipboardContent))
+            {
+                messageErreur = "Le presse-papiers est vide.";
+                return;
+            }
+
+            // Parser le JSON
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            tableaux = JsonSerializer.Deserialize<List<TableauMako>>(clipboardContent, options);
+
+            if (tableaux == null || !tableaux.Any())
+            {
+                messageErreur = "Impossible de parser les données JSON. Vérifiez le format.";
+                tableaux = null;
+                return;
+            }
+
+            // Initialiser toutes les colonnes comme sélectionnées par défaut
+            selectedColumns.Clear();
+            foreach (var tableau in tableaux)
+            {
+                selectedColumns[tableau.Index] = new HashSet<int>();
+                // Sélectionner toutes les colonnes (sauf la première qui est le libellé)
+                for (int i = 1; i < tableau.Headers.Count; i++)
+                {
+                    selectedColumns[tableau.Index].Add(i);
+                }
+            }
+
+            messageSucces = $"{tableaux.Count} tableau(x) chargé(s) avec succès !";
+        }
+        catch (JsonException ex)
+        {
+            messageErreur = $"Erreur de format JSON : {ex.Message}";
+            tableaux = null;
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la récupération : {ex.Message}";
+            tableaux = null;
+        }
+    }
+}
