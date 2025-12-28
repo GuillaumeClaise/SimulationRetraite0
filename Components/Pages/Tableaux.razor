@@ -1,0 +1,482 @@
+@page "/tableaux"
+@using SimulationRetraite0.Models
+@using SimulationRetraite0.Services
+@inject DossierService DossierService
+@inject TableauService TableauService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Tableaux</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Gestion des Tableaux</h2>
+        </div>
+    </div>
+
+    <!-- Sélection du dossier -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Sélectionner un dossier</h5>
+                </div>
+                <div class="card-body">
+                    @if (dossiers == null || !dossiers.Any())
+                    {
+                        <p class="text-muted">Aucun dossier disponible.</p>
+                    }
+                    else
+                    {
+                        <select class="form-select" @onchange="OnDossierSelected">
+                            <option value="">-- Sélectionner un dossier --</option>
+                            @foreach (var dossier in dossiers)
+                            {
+                                <option value="@dossier.TdId" selected="@(dossierSelectionne?.TdId == dossier.TdId)">
+                                    @dossier.TdNomClient @dossier.TdPrenomClient - @dossier.TdNomDossier
+                                </option>
+                            }
+                        </select>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (dossierSelectionne != null)
+        {
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Dossier sélectionné</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Client :</strong> @dossierSelectionne.TdNomClient @dossierSelectionne.TdPrenomClient</p>
+                        <p class="mb-1"><strong>Dossier :</strong> @dossierSelectionne.TdNomDossier</p>
+                        <p class="mb-0"><strong>Nombre de tableaux :</strong> @(tableaux?.Count ?? 0)</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Messages -->
+    @if (!string.IsNullOrEmpty(messageErreur))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Erreur !</strong> @messageErreur
+                    <button type="button" class="btn-close" @onclick="@(() => messageErreur = string.Empty)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(messageSucces))
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Succès !</strong> @messageSucces
+                    <button type="button" class="btn-close" @onclick="@(() => messageSucces = string.Empty)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Liste des tableaux -->
+    @if (dossierSelectionne != null)
+    {
+        @if (tableaux == null)
+        {
+            <div class="row">
+                <div class="col text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (!tableaux.Any())
+        {
+            <div class="row">
+                <div class="col">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Aucun tableau trouvé pour ce dossier.
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Tableaux du dossier</h5>
+                            <span class="badge bg-light text-dark">@tableaux.Count tableau(x)</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width: 5%;">N°</th>
+                                            <th style="width: 20%;">Nom</th>
+                                            <th style="width: 30%;">Description</th>
+                                            <th style="width: 15%;">Date création</th>
+                                            <th style="width: 10%;">Lignes</th>
+                                            <th style="width: 20%;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var tableau in tableaux)
+                                        {
+                                            <tr>
+                                                <td>@tableau.TabNumeroTableau</td>
+                                                <td>@tableau.TabNomTableau</td>
+                                                <td>@(string.IsNullOrEmpty(tableau.TabDescription) ? "-" : tableau.TabDescription)</td>
+                                                <td>@tableau.TabDateCreation.ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td>@(tableau.Lignes?.Count ?? 0)</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-primary me-1" @onclick="() => VoirTableau(tableau.TabId)" title="Voir">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => ModifierTableau(tableau.TabId)" title="Modifier">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmerSuppression(tableau)" title="Supprimer">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Veuillez sélectionner un dossier pour afficher les tableaux.
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal de visualisation du tableau -->
+    @if (tableauSelectionne != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">@tableauSelectionne.TabNomTableau</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="FermerModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(tableauSelectionne.TabDescription))
+                        {
+                            <div class="alert alert-info mb-3">
+                                <strong>Description :</strong> @tableauSelectionne.TabDescription
+                            </div>
+                        }
+
+                        @if (tableauSelectionne.Lignes != null && tableauSelectionne.Lignes.Any())
+                        {
+                            var lignesOrdered = tableauSelectionne.Lignes.OrderBy(l => l.LtNumeroLigne).ToList();
+                            var ligneEntete = lignesOrdered.FirstOrDefault(l => l.LtNumeroLigne == 0);
+                            var lignesDonnees = lignesOrdered.Where(l => l.LtNumeroLigne > 0).ToList();
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover table-sm">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Ligne</th>
+                                            <th>Libellé</th>
+                                            @if (ligneEntete != null)
+                                            {
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur1)) { <th>@ligneEntete.LtValeur1</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur2)) { <th>@ligneEntete.LtValeur2</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur3)) { <th>@ligneEntete.LtValeur3</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur4)) { <th>@ligneEntete.LtValeur4</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur5)) { <th>@ligneEntete.LtValeur5</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur6)) { <th>@ligneEntete.LtValeur6</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur7)) { <th>@ligneEntete.LtValeur7</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur8)) { <th>@ligneEntete.LtValeur8</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9)) { <th>@ligneEntete.LtValeur9</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10)) { <th>@ligneEntete.LtValeur10</th> }
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var ligne in lignesDonnees)
+                                        {
+                                            <tr>
+                                                <td>@ligne.LtNumeroLigne</td>
+                                                <td>@ligne.LtLibelle</td>
+                                                @if (ligneEntete != null)
+                                                {
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur1)) { <td>@ligne.LtValeur1</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur2)) { <td>@ligne.LtValeur2</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur3)) { <td>@ligne.LtValeur3</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur4)) { <td>@ligne.LtValeur4</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur5)) { <td>@ligne.LtValeur5</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur6)) { <td>@ligne.LtValeur6</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur7)) { <td>@ligne.LtValeur7</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur8)) { <td>@ligne.LtValeur8</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9)) { <td>@ligne.LtValeur9</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10)) { <td>@ligne.LtValeur10</td> }
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">Aucune donnée disponible pour ce tableau.</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="FermerModal">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal de confirmation de suppression -->
+    @if (tableauASupprimer != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Confirmer la suppression</h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="AnnulerSuppression"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Êtes-vous sûr de vouloir supprimer le tableau suivant ?</p>
+                        <ul>
+                            <li><strong>Nom :</strong> @tableauASupprimer.TabNomTableau</li>
+                            <li><strong>Numéro :</strong> @tableauASupprimer.TabNumeroTableau</li>
+                            <li><strong>Lignes :</strong> @(tableauASupprimer.Lignes?.Count ?? 0)</li>
+                        </ul>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> Cette action est irréversible. Toutes les lignes du tableau seront supprimées.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="AnnulerSuppression">Annuler</button>
+                        <button type="button" class="btn btn-danger" @onclick="SupprimerTableau">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal de modification -->
+    @if (tableauEnEdition != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">Modifier le tableau</h5>
+                        <button type="button" class="btn-close" @onclick="AnnulerEdition"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom du tableau *</label>
+                            <input type="text" class="form-control" @bind="tableauEnEdition.TabNomTableau" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="3" @bind="tableauEnEdition.TabDescription"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="AnnulerEdition">Annuler</button>
+                        <button type="button" class="btn btn-warning" @onclick="EnregistrerModifications">
+                            <i class="bi bi-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Dossier>? dossiers;
+    private Dossier? dossierSelectionne;
+    private List<Tableau>? tableaux;
+    private Tableau? tableauSelectionne;
+    private Tableau? tableauASupprimer;
+    private Tableau? tableauEnEdition;
+    private string messageErreur = string.Empty;
+    private string messageSucces = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerDossiers();
+    }
+
+    private async Task ChargerDossiers()
+    {
+        try
+        {
+            dossiers = await DossierService.GetDossiersAsync();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement des dossiers: {ex.Message}";
+        }
+    }
+
+    private async Task OnDossierSelected(ChangeEventArgs e)
+    {
+        messageErreur = string.Empty;
+        messageSucces = string.Empty;
+        tableaux = null;
+
+        if (int.TryParse(e.Value?.ToString(), out int dossierId) && dossierId > 0)
+        {
+            dossierSelectionne = dossiers?.FirstOrDefault(d => d.TdId == dossierId);
+            if (dossierSelectionne != null)
+            {
+                await ChargerTableaux();
+            }
+        }
+        else
+        {
+            dossierSelectionne = null;
+        }
+    }
+
+    private async Task ChargerTableaux()
+    {
+        if (dossierSelectionne == null)
+            return;
+
+        try
+        {
+            tableaux = await TableauService.GetTableauxByDossierIdAsync(dossierSelectionne.TdId);
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement des tableaux: {ex.Message}";
+        }
+    }
+
+    private async Task VoirTableau(int tableauId)
+    {
+        try
+        {
+            tableauSelectionne = await TableauService.GetTableauByIdAsync(tableauId);
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement du tableau: {ex.Message}";
+        }
+    }
+
+    private void FermerModal()
+    {
+        tableauSelectionne = null;
+    }
+
+    private void ConfirmerSuppression(Tableau tableau)
+    {
+        tableauASupprimer = tableau;
+    }
+
+    private void AnnulerSuppression()
+    {
+        tableauASupprimer = null;
+    }
+
+    private async Task SupprimerTableau()
+    {
+        if (tableauASupprimer == null)
+            return;
+
+        try
+        {
+            await TableauService.DeleteTableauAsync(tableauASupprimer.TabId);
+            messageSucces = $"Tableau '{tableauASupprimer.TabNomTableau}' supprimé avec succès.";
+            tableauASupprimer = null;
+            await ChargerTableaux();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la suppression: {ex.Message}";
+            tableauASupprimer = null;
+        }
+    }
+
+    private async Task ModifierTableau(int tableauId)
+    {
+        try
+        {
+            var tableau = await TableauService.GetTableauByIdAsync(tableauId);
+            if (tableau != null)
+            {
+                tableauEnEdition = new Tableau
+                {
+                    TabId = tableau.TabId,
+                    TabTdId = tableau.TabTdId,
+                    TabNumeroTableau = tableau.TabNumeroTableau,
+                    TabNomTableau = tableau.TabNomTableau,
+                    TabDescription = tableau.TabDescription,
+                    TabDateCreation = tableau.TabDateCreation
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors du chargement du tableau: {ex.Message}";
+        }
+    }
+
+    private void AnnulerEdition()
+    {
+        tableauEnEdition = null;
+    }
+
+    private async Task EnregistrerModifications()
+    {
+        if (tableauEnEdition == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(tableauEnEdition.TabNomTableau))
+        {
+            messageErreur = "Le nom du tableau est obligatoire.";
+            return;
+        }
+
+        try
+        {
+            await TableauService.UpdateTableauAsync(tableauEnEdition);
+            messageSucces = $"Tableau '{tableauEnEdition.TabNomTableau}' modifié avec succès.";
+            tableauEnEdition = null;
+            await ChargerTableaux();
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la modification: {ex.Message}";
+        }
+    }
+}

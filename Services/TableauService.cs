@@ -46,6 +46,17 @@ public class TableauService
         return tableau;
     }
 
+    public async Task UpdateTableauAsync(Tableau tableau)
+    {
+        var existingTableau = await context.Tableaux.FindAsync(tableau.TabId);
+        if (existingTableau != null)
+        {
+            existingTableau.TabNomTableau = tableau.TabNomTableau;
+            existingTableau.TabDescription = tableau.TabDescription;
+            await context.SaveChangesAsync();
+        }
+    }
+
     public async Task DeleteTableauAsync(int id)
     {
         var tableau = await context.Tableaux.FindAsync(id);
