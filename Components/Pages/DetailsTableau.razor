@@ -1,0 +1,301 @@
+@page "/details-tableau"
+@using SimulationRetraite0.Models
+@using SimulationRetraite0.Services
+@inject DossierService DossierService
+@inject TableauService TableauService
+@rendermode InteractiveServer
+
+<PageTitle>Détails Tableau</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Détails Tableau</h2>
+        </div>
+    </div>
+
+    <!-- Sélection du dossier -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">1. Sélectionner un dossier</h5>
+                </div>
+                <div class="card-body">
+                    @if (dossiers == null || !dossiers.Any())
+                    {
+                        <p class="text-muted">Aucun dossier disponible.</p>
+                    }
+                    else
+                    {
+                        <select class="form-select" @onchange="OnDossierSelected">
+                            <option value="">-- Sélectionner un dossier --</option>
+                            @foreach (var dossier in dossiers)
+                            {
+                                <option value="@dossier.TdId" selected="@(dossierSelectionne?.TdId == dossier.TdId)">
+                                    @dossier.TdNomClient @dossier.TdPrenomClient - @dossier.TdNomDossier
+                                </option>
+                            }
+                        </select>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sélection du tableau -->
+        @if (dossierSelectionne != null)
+        {
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">2. Sélectionner un tableau</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (tableauxDisponibles == null)
+                        {
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                        }
+                        else if (!tableauxDisponibles.Any())
+                        {
+                            <p class="text-muted">Aucun tableau disponible pour ce dossier.</p>
+                        }
+                        else
+                        {
+                            <select class="form-select" @onchange="OnTableauSelected">
+                                <option value="">-- Sélectionner un tableau --</option>
+                                @foreach (var tab in tableauxDisponibles)
+                                {
+                                    <option value="@tab.TabId" selected="@(tableauSelectionne?.TabId == tab.TabId)">
+                                        [@tab.TabNumeroTableau] @tab.TabNomTableau
+                                    </option>
+                                }
+                            </select>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Informations du tableau sélectionné -->
+    @if (tableauSelectionne != null)
+    {
+        <div class="row mb-3">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Informations du tableau</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <strong>Numéro :</strong> @tableauSelectionne.TabNumeroTableau
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Nom :</strong> @tableauSelectionne.TabNomTableau
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Date création :</strong> @tableauSelectionne.TabDateCreation.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Nombre de lignes :</strong> @(lignesDonnees?.Count ?? 0)
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(tableauSelectionne.TabDescription))
+                        {
+                            <div class="row mt-2">
+                                <div class="col">
+                                    <strong>Description :</strong> @tableauSelectionne.TabDescription
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Affichage du tableau de données -->
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">Données du tableau</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (lignesDonnees == null || !lignesDonnees.Any())
+                        {
+                            <div class="alert alert-info m-3">
+                                <i class="bi bi-info-circle"></i> Aucune donnée disponible pour ce tableau.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover table-sm mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width: 60px;">Ligne</th>
+                                            <th style="width: 200px;">Libellé</th>
+                                            @if (ligneEntete != null)
+                                            {
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur1)) { <th>@ligneEntete.LtValeur1</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur2)) { <th>@ligneEntete.LtValeur2</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur3)) { <th>@ligneEntete.LtValeur3</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur4)) { <th>@ligneEntete.LtValeur4</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur5)) { <th>@ligneEntete.LtValeur5</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur6)) { <th>@ligneEntete.LtValeur6</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur7)) { <th>@ligneEntete.LtValeur7</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur8)) { <th>@ligneEntete.LtValeur8</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9)) { <th>@ligneEntete.LtValeur9</th> }
+                                                @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10)) { <th>@ligneEntete.LtValeur10</th> }
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var ligne in lignesDonnees)
+                                        {
+                                            <tr>
+                                                <td class="text-center">@ligne.LtNumeroLigne</td>
+                                                <td>@ligne.LtLibelle</td>
+                                                @if (ligneEntete != null)
+                                                {
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur1)) { <td class="text-end">@ligne.LtValeur1</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur2)) { <td class="text-end">@ligne.LtValeur2</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur3)) { <td class="text-end">@ligne.LtValeur3</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur4)) { <td class="text-end">@ligne.LtValeur4</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur5)) { <td class="text-end">@ligne.LtValeur5</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur6)) { <td class="text-end">@ligne.LtValeur6</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur7)) { <td class="text-end">@ligne.LtValeur7</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur8)) { <td class="text-end">@ligne.LtValeur8</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur9)) { <td class="text-end">@ligne.LtValeur9</td> }
+                                                    @if (!string.IsNullOrEmpty(ligneEntete.LtValeur10)) { <td class="text-end">@ligne.LtValeur10</td> }
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (dossierSelectionne != null)
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Veuillez sélectionner un tableau pour afficher les données.
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Veuillez sélectionner un dossier pour commencer.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Dossier>? dossiers;
+    private Dossier? dossierSelectionne;
+    private List<Tableau>? tableauxDisponibles;
+    private Tableau? tableauSelectionne;
+    private LigneTableau? ligneEntete;
+    private List<LigneTableau>? lignesDonnees;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerDossiers();
+    }
+
+    private async Task ChargerDossiers()
+    {
+        try
+        {
+            dossiers = await DossierService.GetDossiersAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des dossiers: {ex.Message}");
+        }
+    }
+
+    private async Task OnDossierSelected(ChangeEventArgs e)
+    {
+        tableauxDisponibles = null;
+        tableauSelectionne = null;
+        ligneEntete = null;
+        lignesDonnees = null;
+
+        if (int.TryParse(e.Value?.ToString(), out int dossierId) && dossierId > 0)
+        {
+            dossierSelectionne = dossiers?.FirstOrDefault(d => d.TdId == dossierId);
+            if (dossierSelectionne != null)
+            {
+                await ChargerTableauxDuDossier();
+            }
+        }
+        else
+        {
+            dossierSelectionne = null;
+        }
+    }
+
+    private async Task ChargerTableauxDuDossier()
+    {
+        if (dossierSelectionne == null)
+            return;
+
+        try
+        {
+            tableauxDisponibles = await TableauService.GetTableauxByDossierIdAsync(dossierSelectionne.TdId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des tableaux: {ex.Message}");
+        }
+    }
+
+    private async Task OnTableauSelected(ChangeEventArgs e)
+    {
+        ligneEntete = null;
+        lignesDonnees = null;
+
+        if (int.TryParse(e.Value?.ToString(), out int tableauId) && tableauId > 0)
+        {
+            await ChargerTableau(tableauId);
+        }
+        else
+        {
+            tableauSelectionne = null;
+        }
+    }
+
+    private async Task ChargerTableau(int tableauId)
+    {
+        try
+        {
+            tableauSelectionne = await TableauService.GetTableauByIdAsync(tableauId);
+            if (tableauSelectionne != null && tableauSelectionne.Lignes != null)
+            {
+                var lignesOrdered = tableauSelectionne.Lignes.OrderBy(l => l.LtNumeroLigne).ToList();
+                ligneEntete = lignesOrdered.FirstOrDefault(l => l.LtNumeroLigne == 0);
+                lignesDonnees = lignesOrdered.Where(l => l.LtNumeroLigne > 0).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement du tableau: {ex.Message}");
+        }
+    }
+}
