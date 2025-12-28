@@ -21,6 +21,10 @@ public class Tableau
     [StringLength(100)]
     public string? TabNomTableau { get; set; }
 
+    [Column("Tab_Description")]
+    [StringLength(500)]
+    public string? TabDescription { get; set; }
+
     [Column("Tab_DateCreation")]
     public DateTime TabDateCreation { get; set; } = DateTime.Now;
 

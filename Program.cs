@@ -31,6 +31,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // Services métier
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<DossierService>();
+builder.Services.AddScoped<TableauService>();
 
 // AddIdentity configure automatiquement l'authentification et les cookies Identity
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
