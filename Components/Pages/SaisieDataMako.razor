@@ -373,8 +373,41 @@
 
             // Créer les lignes du tableau à partir des données sélectionnées
             var lignes = new List<LigneTableau>();
-            int numeroLigne = 1;
+            var colonnesSelectionnees = selectedColumns[tableauIndex].OrderBy(c => c).ToList();
 
+            // Créer la ligne d'en-têtes (Lt_NumeroLigne = 0)
+            var ligneEntete = new LigneTableau
+            {
+                LtNumeroLigne = 0,
+                LtLibelle = "En-têtes"
+            };
+
+            // Stocker les en-têtes des colonnes sélectionnées
+            for (int i = 0; i < colonnesSelectionnees.Count && i < 10; i++)
+            {
+                var colIndex = colonnesSelectionnees[i];
+                if (colIndex < tableauMako.Headers.Count)
+                {
+                    var entete = tableauMako.Headers[colIndex];
+                    switch (i)
+                    {
+                        case 0: ligneEntete.LtValeur1 = entete; break;
+                        case 1: ligneEntete.LtValeur2 = entete; break;
+                        case 2: ligneEntete.LtValeur3 = entete; break;
+                        case 3: ligneEntete.LtValeur4 = entete; break;
+                        case 4: ligneEntete.LtValeur5 = entete; break;
+                        case 5: ligneEntete.LtValeur6 = entete; break;
+                        case 6: ligneEntete.LtValeur7 = entete; break;
+                        case 7: ligneEntete.LtValeur8 = entete; break;
+                        case 8: ligneEntete.LtValeur9 = entete; break;
+                        case 9: ligneEntete.LtValeur10 = entete; break;
+                    }
+                }
+            }
+            lignes.Add(ligneEntete);
+
+            // Créer les lignes de données (Lt_NumeroLigne commence à 1)
+            int numeroLigne = 1;
             foreach (var row in tableauMako.Rows)
             {
                 var ligne = new LigneTableau
@@ -384,7 +417,6 @@
                 };
 
                 // Ajouter les valeurs des colonnes sélectionnées
-                var colonnesSelectionnees = selectedColumns[tableauIndex].OrderBy(c => c).ToList();
                 for (int i = 0; i < colonnesSelectionnees.Count && i < 10; i++)
                 {
                     var colIndex = colonnesSelectionnees[i];
