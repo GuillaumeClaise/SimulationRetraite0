@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table Extractor</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Extraction de Tableaux</h1>
+
+    <div class="button-bar">
+      <button id="copyBtn" class="btn-primary">Copier Tableau</button>
+      <button id="closeBtn" class="btn-close">Fermer</button>
+      <div id="status" class="status-inline hidden"></div>
+    </div>
+
+    <div id="results" class="results hidden">
+      <div id="tablesContainer"></div>
+
+      <div class="table-count">
+        <p>Tableaux trouvés: <span id="tableCount">0</span></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

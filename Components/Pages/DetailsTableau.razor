@@ -3,6 +3,8 @@
 @using SimulationRetraite0.Services
 @inject DossierService DossierService
 @inject TableauService TableauService
+@inject PowerPointExportService PowerPointExportService
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Détails Tableau</PageTitle>
@@ -89,8 +91,11 @@
                         <button class="btn btn-success me-2" @onclick="EnregistrerModifications" disabled="@(!modeEdition)">
                             <i class="bi bi-save"></i> Enregistrer
                         </button>
-                        <button class="btn btn-secondary" @onclick="AnnulerModifications" disabled="@(!modeEdition)">
+                        <button class="btn btn-secondary me-2" @onclick="AnnulerModifications" disabled="@(!modeEdition)">
                             <i class="bi bi-x-circle"></i> Annuler
+                        </button>
+                        <button class="btn btn-warning" @onclick="ExporterVersPowerPoint" disabled="@modeEdition">
+                            <i class="bi bi-file-earmark-ppt"></i> Exporter vers PowerPoint
                         </button>
                     </div>
                 </div>
@@ -756,5 +761,43 @@
     private void ToggleEntetesVisibility()
     {
         entetesVisible = !entetesVisible;
+    }
+
+    private async Task ExporterVersPowerPoint()
+    {
+        try
+        {
+            messageErreur = string.Empty;
+            messageSucces = string.Empty;
+
+            if (tableauSelectionne == null || lignesDonnees == null)
+            {
+                messageErreur = "Aucune donnée à exporter.";
+                return;
+            }
+
+            // Préparer la liste complète des lignes (entête + données)
+            var toutesLesLignes = new List<LigneTableau>();
+            if (ligneEntete != null)
+            {
+                toutesLesLignes.Add(ligneEntete);
+            }
+            toutesLesLignes.AddRange(lignesDonnees);
+
+            // Générer le fichier PowerPoint
+            var pptxBytes = PowerPointExportService.ExportTableauToPowerPoint(tableauSelectionne, toutesLesLignes);
+
+            // Convertir en base64 et déclencher le téléchargement
+            var base64 = Convert.ToBase64String(pptxBytes);
+            var filename = $"Tableau_{tableauSelectionne.TabNumeroTableau}_{DateTime.Now:yyyyMMdd_HHmmss}.pptx";
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", filename, base64);
+
+            messageSucces = "Export PowerPoint réussi!";
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de l'export PowerPoint : {ex.Message}";
+        }
     }
 }

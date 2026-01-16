@@ -32,6 +32,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddScoped<ClientService>();
 builder.Services.AddScoped<DossierService>();
 builder.Services.AddScoped<TableauService>();
+builder.Services.AddScoped<PowerPointExportService>();
 
 // AddIdentity configure automatiquement l'authentification et les cookies Identity
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>

@@ -1,6 +1,21 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+@rendermode InteractiveServer
+
+@code {
+    private bool showModal = false;
+
+    private void ShowExtensionModal()
+    {
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+}
 
 <PageTitle>Accueil - SimulationRetraite</PageTitle>
 
@@ -15,8 +30,67 @@
             <p>Vous êtes connecté avec succès à l'application de simulation de retraite.</p>
 
             <div class="actions">
+                <button type="button" class="btn btn-primary" @onclick="ShowExtensionModal">
+                    <span class="icon">🔌</span> Installer l'extension Table Extractor
+                </button>
                 <a href="/logout" class="btn btn-secondary">Se déconnecter</a>
             </div>
+
+            @if (showModal)
+            {
+                <div class="modal-overlay" @onclick="CloseModal">
+                    <div class="modal-content" @onclick:stopPropagation="true">
+                        <div class="modal-header">
+                            <h3>Installation de l'extension Table Extractor</h3>
+                            <button class="close-btn" @onclick="CloseModal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="info-section">
+                                <h4>📥 Étape 1 : Télécharger l'extension</h4>
+                                <p>Cliquez sur le bouton ci-dessous pour télécharger l'extension au format ZIP.</p>
+                                <a href="/api/extension/download-table-extractor" class="btn btn-success" download>
+                                    Télécharger Table Extractor (.zip)
+                                </a>
+                            </div>
+
+                            <div class="info-section">
+                                <h4>📂 Étape 2 : Décompresser le fichier</h4>
+                                <p><strong>Sur macOS :</strong></p>
+                                <ol>
+                                    <li>Localisez le fichier <code>table-extractor-extension.zip</code> dans votre dossier Téléchargements</li>
+                                    <li>Double-cliquez sur le fichier ZIP pour le décompresser automatiquement</li>
+                                    <li>Un nouveau dossier <code>table-extractor-extension</code> sera créé</li>
+                                </ol>
+                            </div>
+
+                            <div class="info-section">
+                                <h4>🌐 Étape 3 : Installer dans Chrome</h4>
+                                <ol>
+                                    <li>Ouvrez Google Chrome</li>
+                                    <li>Tapez dans la barre d'adresse : <code>chrome://extensions/</code> et appuyez sur Entrée</li>
+                                    <li>Activez le <strong>"Mode développeur"</strong> en haut à droite de la page</li>
+                                    <li>Cliquez sur <strong>"Charger l'extension non empaquetée"</strong></li>
+                                    <li>Sélectionnez le dossier décompressé <code>table-extractor-extension</code></li>
+                                    <li>L'extension est maintenant installée ! 🎉</li>
+                                </ol>
+                            </div>
+
+                            <div class="info-section">
+                                <h4>✨ Utilisation</h4>
+                                <p>Une fois installée, l'icône de l'extension apparaîtra dans la barre d'outils Chrome. Cliquez dessus sur n'importe quelle page web contenant des tableaux pour les extraire automatiquement.</p>
+                            </div>
+
+                            <div class="info-section warning">
+                                <h4>⚠️ Note importante</h4>
+                                <p>Cette extension nécessite le mode développeur car elle n'est pas publiée sur le Chrome Web Store. C'est normal et sans danger.</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" @onclick="CloseModal">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            }
         </Authorized>
         <NotAuthorized>
             <p>Vous devez vous connecter pour accéder à cette page.</p>
@@ -36,15 +110,42 @@
 
     .actions {
         margin-top: 30px;
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
     }
 
     .btn {
         display: inline-block;
-        padding: 10px 20px;
+        padding: 12px 24px;
         border-radius: 6px;
         text-decoration: none;
         font-weight: 500;
         transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-success:hover {
+        background-color: #218838;
     }
 
     .btn-secondary {
@@ -54,5 +155,148 @@
 
     .btn-secondary:hover {
         background-color: #5a6268;
+    }
+
+    .icon {
+        margin-right: 8px;
+        font-size: 18px;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        max-width: 700px;
+        width: 90%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        animation: slideUp 0.3s ease;
+    }
+
+    .modal-header {
+        padding: 20px 30px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 22px;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 32px;
+        color: white;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+    }
+
+    .close-btn:hover {
+        background-color: rgba(255,255,255,0.2);
+    }
+
+    .modal-body {
+        padding: 30px;
+    }
+
+    .info-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+
+    .info-section.warning {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+    }
+
+    .info-section h4 {
+        margin: 0 0 12px 0;
+        color: #333;
+        font-size: 18px;
+    }
+
+    .info-section p {
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+
+    .info-section ol {
+        margin: 10px 0;
+        padding-left: 20px;
+    }
+
+    .info-section li {
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+
+    .info-section code {
+        background: #e9ecef;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        color: #d63384;
+    }
+
+    .modal-footer {
+        padding: 20px 30px;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
 </style>
