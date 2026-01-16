@@ -2,7 +2,10 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using SimulationRetraite0.Models
+@using SimulationRetraite0.Data
+@using Microsoft.AspNetCore.Components.Authorization
 @inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [Authorize]
 @rendermode InteractiveServer
 
@@ -247,7 +250,10 @@
                 return;
             }
 
-            if (user.UserName == User.Identity?.Name)
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var currentUserName = authState.User.Identity?.Name;
+
+            if (user.UserName == currentUserName)
             {
                 messageErreur = "Vous ne pouvez pas supprimer votre propre compte.";
                 return;
