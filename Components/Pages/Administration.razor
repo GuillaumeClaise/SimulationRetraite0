@@ -1,0 +1,286 @@
+@page "/administration"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using SimulationRetraite0.Models
+@inject UserManager<ApplicationUser> UserManager
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>Administration des utilisateurs</PageTitle>
+
+<div class="container mt-4">
+    <h2>Administration des utilisateurs</h2>
+
+    @if (!string.IsNullOrEmpty(messageSucces))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @messageSucces
+            <button type="button" class="btn-close" @onclick="@(() => messageSucces = string.Empty)"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(messageErreur))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @messageErreur
+            <button type="button" class="btn-close" @onclick="@(() => messageErreur = string.Empty)"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Formulaire de création d'utilisateur -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Créer un nouvel utilisateur</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@nouveauUtilisateur" OnValidSubmit="CreerUtilisateur">
+                        <div class="mb-3">
+                            <label class="form-label">Nom d'utilisateur</label>
+                            <InputText class="form-control" @bind-Value="nouveauUtilisateur.UserName" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText class="form-control" @bind-Value="nouveauUtilisateur.Email" type="email" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mot de passe</label>
+                            <InputText class="form-control" @bind-Value="nouveauUtilisateur.Password" type="password" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Créer l'utilisateur
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire de modification de mot de passe -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Modifier le mot de passe d'un utilisateur</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@modificationMotDePasse" OnValidSubmit="ModifierMotDePasse">
+                        <div class="mb-3">
+                            <label class="form-label">Utilisateur</label>
+                            <InputSelect class="form-select" @bind-Value="modificationMotDePasse.UserId">
+                                <option value="">-- Sélectionnez un utilisateur --</option>
+                                @foreach (var user in utilisateurs)
+                                {
+                                    <option value="@user.Id">@user.UserName (@user.Email)</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nouveau mot de passe</label>
+                            <InputText class="form-control" @bind-Value="modificationMotDePasse.NewPassword" type="password" />
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-key"></i> Modifier le mot de passe
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des utilisateurs existants -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Utilisateurs existants</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nom d'utilisateur</th>
+                            <th>Email</th>
+                            <th>Email confirmé</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in utilisateurs)
+                        {
+                            <tr>
+                                <td>@user.UserName</td>
+                                <td>@user.Email</td>
+                                <td>
+                                    @if (user.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-success">Oui</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">Non</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => SupprimerUtilisateur(user.Id)">
+                                        <i class="bi bi-trash"></i> Supprimer
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ApplicationUser> utilisateurs = new();
+    private string messageSucces = string.Empty;
+    private string messageErreur = string.Empty;
+
+    private NouvelUtilisateur nouveauUtilisateur = new();
+    private ModificationMotDePasse modificationMotDePasse = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerUtilisateurs();
+    }
+
+    private async Task ChargerUtilisateurs()
+    {
+        utilisateurs = UserManager.Users.ToList();
+    }
+
+    private async Task CreerUtilisateur()
+    {
+        try
+        {
+            messageSucces = string.Empty;
+            messageErreur = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(nouveauUtilisateur.UserName) ||
+                string.IsNullOrWhiteSpace(nouveauUtilisateur.Email) ||
+                string.IsNullOrWhiteSpace(nouveauUtilisateur.Password))
+            {
+                messageErreur = "Tous les champs sont obligatoires.";
+                return;
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = nouveauUtilisateur.UserName,
+                Email = nouveauUtilisateur.Email,
+                EmailConfirmed = true
+            };
+
+            var result = await UserManager.CreateAsync(user, nouveauUtilisateur.Password);
+
+            if (result.Succeeded)
+            {
+                messageSucces = $"Utilisateur '{nouveauUtilisateur.UserName}' créé avec succès !";
+                nouveauUtilisateur = new NouvelUtilisateur();
+                await ChargerUtilisateurs();
+            }
+            else
+            {
+                messageErreur = string.Join(", ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la création de l'utilisateur : {ex.Message}";
+        }
+    }
+
+    private async Task ModifierMotDePasse()
+    {
+        try
+        {
+            messageSucces = string.Empty;
+            messageErreur = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(modificationMotDePasse.UserId) ||
+                string.IsNullOrWhiteSpace(modificationMotDePasse.NewPassword))
+            {
+                messageErreur = "Veuillez sélectionner un utilisateur et saisir un nouveau mot de passe.";
+                return;
+            }
+
+            var user = await UserManager.FindByIdAsync(modificationMotDePasse.UserId);
+            if (user == null)
+            {
+                messageErreur = "Utilisateur non trouvé.";
+                return;
+            }
+
+            // Supprimer l'ancien mot de passe et en définir un nouveau
+            var token = await UserManager.GeneratePasswordResetTokenAsync(user);
+            var result = await UserManager.ResetPasswordAsync(user, token, modificationMotDePasse.NewPassword);
+
+            if (result.Succeeded)
+            {
+                messageSucces = $"Mot de passe de '{user.UserName}' modifié avec succès !";
+                modificationMotDePasse = new ModificationMotDePasse();
+            }
+            else
+            {
+                messageErreur = string.Join(", ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la modification du mot de passe : {ex.Message}";
+        }
+    }
+
+    private async Task SupprimerUtilisateur(string userId)
+    {
+        try
+        {
+            messageSucces = string.Empty;
+            messageErreur = string.Empty;
+
+            var user = await UserManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                messageErreur = "Utilisateur non trouvé.";
+                return;
+            }
+
+            if (user.UserName == User.Identity?.Name)
+            {
+                messageErreur = "Vous ne pouvez pas supprimer votre propre compte.";
+                return;
+            }
+
+            var result = await UserManager.DeleteAsync(user);
+
+            if (result.Succeeded)
+            {
+                messageSucces = $"Utilisateur '{user.UserName}' supprimé avec succès !";
+                await ChargerUtilisateurs();
+            }
+            else
+            {
+                messageErreur = string.Join(", ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            messageErreur = $"Erreur lors de la suppression de l'utilisateur : {ex.Message}";
+        }
+    }
+
+    private class NouvelUtilisateur
+    {
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private class ModificationMotDePasse
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+}
